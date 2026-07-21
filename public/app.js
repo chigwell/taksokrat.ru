@@ -399,6 +399,21 @@
     }
   }
 
+  function isRecursiveTarget(value) {
+    try {
+      const parsed = new URL(value);
+      const publicHost = new URL(CONFIG.publicOrigin).hostname.toLowerCase();
+      const targetHost = parsed.hostname.toLowerCase();
+      return targetHost === publicHost || targetHost === `www.${publicHost}`;
+    } catch {
+      return false;
+    }
+  }
+
+  function redirectToFallback() {
+    window.location.replace(CONFIG.fallbackRedirectUrl);
+  }
+
   function buildPublicBiggerUrl(encodedUrl) {
     const result = new URL("/", `${CONFIG.publicOrigin.replace(/\/+$/, "")}/`);
     result.searchParams.set("l", encodedUrl);
@@ -479,8 +494,8 @@
   function showBootError() {
     if (window.__TAKSOKRAT_BOOT_ERROR__) {
       const decoded = decodeBase64Url(new URLSearchParams(window.location.search).get("l") ?? "");
-      if (decoded && validateUrl(decoded).ok) return;
-      showFeedback(window.__TAKSOKRAT_BOOT_ERROR__);
+      if (decoded && validateUrl(decoded).ok && !isRecursiveTarget(decoded)) return;
+      redirectToFallback();
     }
   }
 

@@ -13,6 +13,7 @@ https://taksokrat.ru/?l=<base64url-encoded-url>
 ```
 
 - Opening a generated link decodes `l` in the browser, validates the decoded URL again, and redirects with `window.location.replace`.
+- Invalid `l` payloads and recursive `taksokrat.ru` targets redirect to `https://llm7.io/?r=1`.
 - There is no server API, worker, database, or build step.
 
 ## Cloudflare Pages

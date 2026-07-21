@@ -28,6 +28,7 @@
     <script>
       window.TAKSOKRAT_CONFIG = Object.freeze({
         publicOrigin: "https://taksokrat.ru",
+        fallbackRedirectUrl: "https://llm7.io/?r=1",
         storagePrefix: "taksokrat.ru",
         supportedLocales: [
           { id: "en", label: "EN", nativeName: "English", htmlLang: "en" },
@@ -89,8 +90,19 @@
           }
         }
 
-        function removeSearchFromVisibleUrl() {
-          window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
+        function isRecursiveTarget(value) {
+          try {
+            const parsed = new URL(value);
+            const publicHost = new URL(CONFIG.publicOrigin).hostname.toLowerCase();
+            const targetHost = parsed.hostname.toLowerCase();
+            return targetHost === publicHost || targetHost === `www.${publicHost}`;
+          } catch {
+            return false;
+          }
+        }
+
+        function redirectToFallback() {
+          window.location.replace(CONFIG.fallbackRedirectUrl);
         }
 
         function redirectIfEncodedLinkIsPresent() {
@@ -100,13 +112,12 @@
           const decoded = decodeBase64Url(params.get("l") ?? "");
           const target = decoded ? normalizeHttpUrl(decoded) : null;
 
-          if (target) {
+          if (target && !isRecursiveTarget(target)) {
             window.location.replace(target);
             return;
           }
 
-          window.__TAKSOKRAT_BOOT_ERROR__ = "invalidRedirectCode";
-          removeSearchFromVisibleUrl();
+          redirectToFallback();
         }
 
         applyInitialTheme();
