@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#eef3ff" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="description"
+      content="Taksokrat.ru turns links into longer encoded URLs."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Taksokrat.ru - Bigger links" />
+    <meta
+      property="og:description"
+      content="Paste a URL and get a longer encoded Taksokrat.ru link."
+    />
+    <meta property="og:url" content="https://taksokrat.ru/" />
+    <meta property="og:image" content="/taksokrat-ru.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="/taksokrat-ru.png" />
+    <title>Taksokrat.ru - Bigger links</title>
+
+    <link rel="icon" href="/taksokrat-ru-icon.png" />
+    <link rel="apple-touch-icon" href="/taksokrat-ru-icon.png" />
+
+    <script>
+      window.TAKSOKRAT_CONFIG = Object.freeze({
+        publicOrigin: "https://taksokrat.ru",
+        storagePrefix: "taksokrat.ru",
+        supportedLocales: [
+          { id: "en", label: "EN", nativeName: "English", htmlLang: "en" },
+          { id: "ru", label: "RU", nativeName: "Русский", htmlLang: "ru" },
+          { id: "zh", label: "中文", nativeName: "简体中文", htmlLang: "zh-Hans" },
+        ],
+      });
+
+      (() => {
+        "use strict";
+
+        const CONFIG = window.TAKSOKRAT_CONFIG;
+        const HTTP_URL_PATTERN = /^https?:\/\//i;
+        const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+        function storageKey(name) {
+          return `${CONFIG.storagePrefix}:${name}`;
+        }
+
+        function applyInitialTheme() {
+          try {
+            const stored = window.localStorage.getItem(storageKey("theme"));
+            const theme =
+              stored === "light" || stored === "dark"
+                ? stored
+                : window.matchMedia?.("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light";
+            document.documentElement.dataset.theme = theme;
+          } catch {
+            document.documentElement.dataset.theme = "light";
+          }
+        }
+
+        function decodeBase64Url(value) {
+          if (!value || value.length % 4 === 1 || !BASE64URL_PATTERN.test(value)) return null;
+
+          try {
+            const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+            const binary = window.atob(padded);
+            const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+            return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+          } catch {
+            return null;
+          }
+        }
+
+        function normalizeHttpUrl(value) {
+          const trimmed = value.trim();
+          if (!HTTP_URL_PATTERN.test(trimmed)) return null;
+
+          try {
+            const parsed = new URL(trimmed);
+            if (!parsed.hostname || (parsed.protocol !== "http:" && parsed.protocol !== "https:")) return null;
+            return parsed.href;
+          } catch {
+            return null;
+          }
+        }
+
+        function removeSearchFromVisibleUrl() {
+          window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
+        }
+
+        function redirectIfEncodedLinkIsPresent() {
+          const params = new URLSearchParams(window.location.search);
+          if (!params.has("l")) return;
+
+          const decoded = decodeBase64Url(params.get("l") ?? "");
+          const target = decoded ? normalizeHttpUrl(decoded) : null;
+
+          if (target) {
+            window.location.replace(target);
+            return;
+          }
+
+          window.__TAKSOKRAT_BOOT_ERROR__ = "invalidRedirectCode";
+          removeSearchFromVisibleUrl();
+        }
+
+        applyInitialTheme();
+        redirectIfEncodedLinkIsPresent();
+      })();
+    </script>
+
+    <link rel="stylesheet" href="/styles.css" />
+    <script defer src="/app.js"></script>
+  </head>
+
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" data-i18n-aria-label="brandAria">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/taksokrat-ru-icon.png" alt="" width="256" height="256" />
+          </span>
+          <span class="brand-name">Taksokrat<span class="brand-tld">.ru</span></span>
+        </a>
+
+        <div class="toolbar">
+          <div
+            class="language-switcher glass-control"
+            id="languageSwitcher"
+            role="group"
+            data-i18n-aria-label="languageSwitcherAria"
+          ></div>
+
+          <button
+            class="control-button glass-control"
+            id="themeToggle"
+            type="button"
+            data-i18n-aria-label="switchToDark"
+            data-i18n-title="switchToDark"
+          ></button>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="heroTitle">
+          <p class="eyebrow">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span data-i18n="eyebrow">Bigger links.</span>
+          </p>
+
+          <h1 class="hero-title" id="heroTitle">
+            <span class="hero-title-line" data-i18n="heroTitleStart">Need a bigger link?</span>
+            <span class="hero-title-line gradient-text" data-i18n="heroTitleAccent">We will expand it.</span>
+          </h1>
+
+          <p class="hero-subtitle" data-i18n="heroSubtitle">
+            Paste a URL and get a longer link.
+          </p>
+
+          <div class="shortener-wrap">
+            <form class="shortener-form" id="expanderForm" novalidate>
+              <div class="shortener-panel" id="expanderPanel" aria-busy="false">
+                <div class="input-row">
+                  <div class="input-icon" aria-hidden="true">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M9 17H7A5 5 0 0 1 7 7h2" />
+                      <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+                      <line x1="8" x2="16" y1="12" y2="12" />
+                    </svg>
+                  </div>
+
+                  <label class="sr-only" for="urlInput" data-i18n="inputLabel">URL to expand</label>
+                  <input
+                    class="url-input"
+                    id="urlInput"
+                    name="url"
+                    type="url"
+                    inputmode="url"
+                    enterkeyhint="go"
+                    autocomplete="url"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    maxlength="4096"
+                    required
+                    placeholder="https://example.com/your/link"
+                    data-i18n-placeholder="inputPlaceholder"
+                    data-i18n-aria-label="inputLabel"
+                  />
+
+                  <button
+                    class="submit-button"
+                    id="submitButton"
+                    type="submit"
+                    data-i18n-aria-label="submitAria"
+                    data-i18n-title="submitAria"
+                  >
+                    <span class="submit-idle" aria-hidden="true">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                      </svg>
+                    </span>
+                    <span class="submit-loading" aria-hidden="true">
+                      <span class="spinner"></span>
+                    </span>
+                  </button>
+                </div>
+
+                <div class="form-meta">
+                  <span data-i18n="inputHint">Only http:// and https:// links are accepted.</span>
+                  <span class="form-status" id="formStatus" aria-live="polite"></span>
+                </div>
+
+                <div class="loading-line" aria-hidden="true"></div>
+              </div>
+            </form>
+
+            <div class="feedback" id="feedback" role="alert" aria-live="assertive" style="display: none">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12 7.5v5.5M12 16.5v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+              <span id="feedbackText"></span>
+            </div>
+
+            <section
+              class="result-card"
+              id="resultCard"
+              aria-live="polite"
+              data-i18n-aria-label="resultRegionAria"
+              style="display: none"
+            >
+              <div class="result-content">
+                <span class="result-label" data-i18n="resultLabel">Your bigger link</span>
+                <a
+                  class="result-link"
+                  id="resultLink"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  dir="ltr"
+                ></a>
+              </div>
+
+              <div class="result-actions">
+                <button
+                  class="action-button"
+                  id="copyButton"
+                  type="button"
+                  data-i18n-aria-label="copyAria"
+                  data-i18n-title="copyAria"
+                >
+                  <svg
+                    class="copy-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                  <svg
+                    class="copy-check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </button>
+
+                <a
+                  class="action-button"
+                  id="openButton"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-i18n-aria-label="openAria"
+                  data-i18n-title="openAria"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M15 3h6v6" />
+                    <path d="M10 14 21 3" />
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  </svg>
+                </a>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <span data-i18n="footerTagline">Bigger links.</span>
+        <span class="footer-copy">© <span id="currentYear"></span> Taksokrat.ru</span>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="m5 12.5 4.2 4.2L19 7"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span id="toastText"></span>
+    </div>
+  </body>
+</html>

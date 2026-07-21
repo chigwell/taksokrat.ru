@@ -1,0 +1,11 @@
+{
+  "name": "taksokrat-ru",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "check": "node --check public/app.js",
+    "dev": "npx --yes wrangler@3.91.0 pages dev public --ip 127.0.0.1 --port 4177",
+    "deploy": "npx --yes wrangler@3.91.0 pages deploy public --project-name=taksokrat-ru",
+    "project:create": "npx --yes wrangler@3.91.0 pages project create taksokrat-ru --production-branch=main"
+  }
+}
